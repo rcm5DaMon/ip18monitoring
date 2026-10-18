@@ -34,9 +34,11 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 .eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 h1{margin:4px 0 0;font-size:clamp(26px,4vw,34px);letter-spacing:-.02em;font-weight:700;text-wrap:balance}
 .src{color:var(--muted);font-size:13px;margin-top:4px}
-.upload{display:flex;align-items:center;gap:10px}
+.upload{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .btn{appearance:none;border:0;background:var(--accent);color:#fff;border-radius:980px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
 .btn:hover{filter:brightness(1.08)}
+.btn.secondary{background:var(--surface);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.btn.secondary:hover{filter:none;background:var(--hover)}
 .btn.ghost{background:transparent;color:var(--accent);padding:9px 6px}
 #file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .drop{position:fixed;inset:0;background:var(--accent-soft);border:2px dashed var(--accent);display:grid;place-items:center;font-size:18px;font-weight:600;color:var(--accent);z-index:50;backdrop-filter:blur(4px)}
@@ -119,6 +121,7 @@ footer{font-size:12px;color:var(--faint);display:flex;flex-direction:column;gap:
     </div>
     <div class="upload">
       <button class="btn ghost" id="resetBtn" hidden>Clear data</button>
+      <button class="btn secondary" id="exportBtn" type="button">Export to Excel</button>
       <label class="btn" for="file" id="uploadBtn" tabindex="0">Upload Excel</label>
       <input type="file" id="file" accept=".xlsx,.xls,.xlsb,.csv">
     </div>
@@ -127,7 +130,7 @@ footer{font-size:12px;color:var(--faint);display:flex;flex-direction:column;gap:
 
   <section class="emptyst" id="empty" hidden>
     <h2>Upload your Sales vs Stock file</h2>
-    <p>Choose or drop the Excel export. Stock, Today sales, Day 1 sales and excess stock will appear here by region, LOB and store.</p>
+    <p>Choose or drop the Excel export. Stock, Today sales, Day 1 - 2 sales and excess stock will appear here by region, LOB and store.</p>
     <label class="btn" for="file" style="margin-top:8px">Choose Excel file</label>
   </section>
   <div id="main" style="display:flex;flex-direction:column;gap:22px">
@@ -160,7 +163,7 @@ footer{font-size:12px;color:var(--faint);display:flex;flex-direction:column;gap:
           <button data-k="excess" aria-pressed="true">Excess</button>
           <button data-k="stock" aria-pressed="false">Stock</button>
           <button data-k="today" aria-pressed="false">Today</button>
-          <button data-k="day1" aria-pressed="false">Day 1</button>
+          <button data-k="day1" aria-pressed="false">Day 1 - 2</button>
         </div>
       </div>
     </div>
@@ -170,7 +173,7 @@ footer{font-size:12px;color:var(--faint);display:flex;flex-direction:column;gap:
   </div>
   <footer>
     <div>Excess stock = Stock qty − Today sales qty. Negative excess (red) means today's sales exceeded stock.</div>
-    <div>Expected columns: Site Code, Plant, Quantity, Line (stock / Today / Day 1), Business Unit, LOB, TSH, Type 2. The file is read in your browser and never uploaded anywhere.</div>
+    <div>Expected columns: Site Code, Plant, Quantity, Line (stock / Today / Day 1 - 2), Business Unit, LOB, TSH, Type 2. The file is read in your browser and never uploaded anywhere.</div>
   </footer>
 </div>
 <div class="drop" id="drop" hidden>Drop the Excel file to load it</div>
@@ -239,7 +242,7 @@ function renderKpis(){
   $("kpis").innerHTML = `
     <div class="kpi"><div class="lab">Stock</div><div class="val num">${fmt(t.stock)}</div><div class="sub">${fmt(stores)} stores holding stock</div></div>
     <div class="kpi"><div class="lab">Today sales</div><div class="val num">${fmt(t.today)}</div><div class="sub">${pct}% of stock</div></div>
-    <div class="kpi"><div class="lab">Day 1 sales</div><div class="val num">${fmt(t.day1)}</div><div class="sub">Launch day</div></div>
+    <div class="kpi"><div class="lab">Day 1 - 2 sales</div><div class="val num">${fmt(t.day1)}</div><div class="sub">First two days of launch</div></div>
     <div class="kpi key"><div class="lab">Excess stock</div><div class="val num ${t.excess<0?"neg":""}">${fmt(t.excess)}</div><div class="sub">Stock − Today sales</div></div>`;
 }
 function renderProducts(){
@@ -249,7 +252,7 @@ function renderProducts(){
   const tot = rows.reduce(add, zero());
   const maxStock = Math.max(1, ...list.map(t=>by[t].stock));
   if(!list.length){ $("prodTbl").innerHTML = `<tbody><tr><td class="empty">No rows match these filters.</td></tr></tbody>`; return; }
-  $("prodTbl").innerHTML = `<thead><tr><th class="nosort">Model</th><th class="nosort">Stock</th><th class="nosort">Today</th><th class="nosort">Day 1</th><th class="nosort">Excess</th></tr></thead><tbody>
+  $("prodTbl").innerHTML = `<thead><tr><th class="nosort">Model</th><th class="nosort">Stock</th><th class="nosort">Today</th><th class="nosort">Day 1 - 2</th><th class="nosort">Excess</th></tr></thead><tbody>
     ${list.map(t=>{const a=by[t];return `<tr class="click${S.f.t2===t?" sel-row":""}" data-t2="${esc(t)}"><td><span class="name">${esc(t2Short(t))}</span></td><td class="num">${fmt(a.stock)}<span class="xbar" title="Today sales vs stock"><i style="width:${a.stock?Math.min(100,a.today/a.stock*100):0}%"></i></span></td><td class="num">${fmt(a.today)}</td><td class="num">${fmt(a.day1)}</td>${exCell(a.excess)}</tr>`}).join("")}
     <tr class="total"><td>Total</td><td class="num">${fmt(tot.stock)}<span class="xbar" style="visibility:hidden"></span></td><td class="num">${fmt(tot.today)}</td><td class="num">${fmt(tot.day1)}</td>${exCell(tot.excess)}</tr></tbody>`;
 }
@@ -274,7 +277,7 @@ function renderLevel(){
   const ar = k => S.sort.k===k ? (S.sort.d<0?"↓":"↑") : "";
   const head = prod
     ? tCols.map(t=>`<th data-s="t2:${esc(t)}">${esc(t2Short(t))} <span class="ar">${ar("t2:"+t)}</span></th>`).join("") + `<th data-s="${m}">Total <span class="ar">${ar(m)}</span></th>`
-    : [["stock","Stock"],["today","Today"],["day1","Day 1"],["excess","Excess"]].map(([k,l])=>`<th data-s="${k}">${l} <span class="ar">${ar(k)}</span></th>`).join("");
+    : [["stock","Stock"],["today","Today"],["day1","Day 1 - 2"],["excess","Excess"]].map(([k,l])=>`<th data-s="${k}">${l} <span class="ar">${ar(k)}</span></th>`).join("");
   const line = (g, cls, attrs, first) => `<tr class="${cls}" ${attrs}><td>${first}</td>${prod ? tCols.map(t=>cell((g.byT2[t]||zero())[m],m)).join("")+cell(g.tot[m],m) : cell(g.tot.stock,"stock")+cell(g.tot.today,"today")+cell(g.tot.day1,"day1")+cell(g.tot.excess,"excess")}</tr>`;
   const negPill = g => g.tot.excess<0 ? `<span class="pill">Short ${fmt(-g.tot.excess)}</span>` : "";
   let body = "";
@@ -374,8 +377,8 @@ function aggregate(data, ix){
   const m = new Map(); let n=0, skipped=0;
   for(const r of data){
     const site = String(r[ix.site]).trim(); if(!site) continue;
-    const ln = String(r[ix.line]).trim().toLowerCase().replace(/\s+/g,"");
-    const slot = ln==="stock"?7 : ln==="today"?8 : (ln==="day1"||ln==="d1")?9 : -1;
+    const ln = String(r[ix.line]).trim().toLowerCase().replace(/[\s\-\u2013_]+/g,"");
+    const slot = ln==="stock"?7 : ln==="today"?8 : (ln==="day1"||ln==="d1"||ln==="day12"||ln==="d12")?9 : -1;
     if(slot<0){ skipped++; continue; }
     const q = Number(r[ix.qty])||0; n++;
     const vals = [site, ix.plant>=0?String(r[ix.plant]).trim():"", String(r[ix.bu]).trim(), String(r[ix.lob]).trim(), String(r[ix.tsh]).trim(), String(r[ix.t2]).trim(), ix.det>=0?String(r[ix.det]).trim():""];
@@ -383,7 +386,7 @@ function aggregate(data, ix){
     let a = m.get(key); if(!a){ a=[...vals,0,0,0]; m.set(key,a); }
     a[slot] += q;
   }
-  if(!n) throw new Error("No rows with Line = stock, Today or Day 1 were found.");
+  if(!n) throw new Error("No rows with Line = stock, Today or Day 1 - 2 were found.");
   return {rows:[...m.values()], n, skipped};
 }
 function load(rows, name, isSample){
@@ -392,11 +395,59 @@ function load(rows, name, isSample){
   const lines = rows.length;
   $("src").textContent = (isSample ? "Preloaded · " : "") + name;
   $("resetBtn").hidden = isSample;
+  $("exportBtn").hidden = !rows.length;
   const none = !rows.length;
   $("empty").hidden = !none; $("main").hidden = none;
   if(none){ $("src").textContent = "No file loaded yet"; return; }
   render();
 }
+
+/* ---------- export to Excel ---------- */
+let DL = null;
+try{ if(window.claude && window.claude.use) window.claude.use("downloads").then(d=>{DL=d}).catch(()=>{}); }catch(_){}
+function exportExcel(){
+  if(typeof XLSX==="undefined" || !XLSX.utils.book_new){ note("The Excel library could not load. Check your connection and reload the page."); return; }
+  if(!S.rows.length){ note("Upload a file first."); return; }
+  const rows = S.rows.filter(r=>match(r));
+  if(!rows.length){ note("No rows match these filters, so there is nothing to export."); return; }
+  const H = ["Stock","Today Sales","Day 1 - 2 Sales","Excess Stock (Stock - Today)"];
+  const vals = a => [a.stock,a.today,a.day1,a.excess];
+  const tot = rows.reduce(add, zero());
+  const wb = XLSX.utils.book_new();
+  const sheet = (name, aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = widths.map(w=>({wch:w})); ws["!autofilter"] = {ref: XLSX.utils.encode_range({s:{r:aoa.findIndex(x=>x.includes("Stock")),c:0},e:{r:aoa.length-1,c:aoa[aoa.length-1].length-1}})}; XLSX.utils.book_append_sheet(wb, ws, name); };
+  const f = S.f;
+  const fl = [["BU", f.bu?buLabel(f.bu):"All"],["LOB", f.lob||"All"],["TSH", f.tsh||"All"],["Store", f.site||"All"],["Product (Type 2)", f.t2?t2Short(f.t2):"All"]];
+  // Summary
+  const sum = [["iPhone 18 Sales vs Stock"],["Source file", S.name],["Exported", new Date().toLocaleString("id-ID")],[],["Filters"],...fl,[],["Metric","Qty"],["Stock",tot.stock],["Today Sales",tot.today],["Day 1 - 2 Sales",tot.day1],["Excess Stock (Stock - Today)",tot.excess]];
+  const ws0 = XLSX.utils.aoa_to_sheet(sum); ws0["!cols"]=[{wch:30},{wch:40}]; XLSX.utils.book_append_sheet(wb, ws0, "Summary");
+  // By product
+  const pg = Object.fromEntries(group(rows, r=>r[5]).map(g=>[g.key,g.tot]));
+  sheet("By Product", [["Type 2", ...H], ...T2.filter(t=>pg[t]).map(t=>[t, ...vals(pg[t])]), ["TOTAL", ...vals(tot)]], [28,10,12,15,26]);
+  // By BU
+  sheet("By BU", [["Business Unit", ...H], ...group(rows, r=>r[2]).sort((a,b)=>String(a.key).localeCompare(b.key)).map(g=>[buLabel(g.key), ...vals(g.tot)]), ["TOTAL", ...vals(tot)]], [18,10,12,15,26]);
+  // By LOB / TSH
+  sheet("By LOB", [["LOB", ...H], ...group(rows, r=>r[3]).sort((a,b)=>b.tot.excess-a.tot.excess).map(g=>[g.key, ...vals(g.tot)]), ["TOTAL", ...vals(tot)]], [22,10,12,15,26]);
+  sheet("By TSH", [["LOB","TSH", ...H], ...group(rows, r=>r[3]+"|"+r[4]).sort((a,b)=>a.first[3].localeCompare(b.first[3])||b.tot.excess-a.tot.excess).map(g=>[g.first[3], g.first[4], ...vals(g.tot)])], [22,26,10,12,15,26]);
+  // By store
+  sheet("By Store", [["Plant","Store","Business Unit","LOB","TSH", ...H], ...group(rows, r=>r[0]).sort((a,b)=>b.tot.excess-a.tot.excess).map(g=>[g.first[1], g.key, buLabel(g.first[2]), g.first[3], g.first[4], ...vals(g.tot)])], [8,34,14,20,24,10,12,15,26]);
+  // Store x product (pivot-ready)
+  const det = rows.map(r=>({r, a:add(zero(), r)})).sort((x,y)=>x.r[0].localeCompare(y.r[0]) || T2.indexOf(x.r[5])-T2.indexOf(y.r[5]));
+  sheet("Store x Product", [["Plant","Store","Business Unit","LOB","TSH","Type 2", ...H], ...det.map(({r,a})=>[r[1], r[0], buLabel(r[2]), r[3], r[4], r[5], ...vals(a)])], [8,34,14,20,24,28,10,12,15,26]);
+
+  const buf = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  const d = new Date(), pad = n=>String(n).padStart(2,"0");
+  const tag = [f.bu&&buLabel(f.bu), f.lob, f.tsh, f.site, f.t2&&t2Short(f.t2)].filter(Boolean).join("_").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"-");
+  const filename = `IP18_Sales_vs_Stock${tag?"_"+tag:""}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.xlsx`;
+  const blob = new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(DL){
+    DL.save({filename, data:blob}).then(()=>note("Exported "+filename+".", true)).catch(e=>{ if(e && e.code==="declined") return; note(e && e.code==="rate_limited" ? "A save prompt is already open. Try again in a moment." : "The file could not be saved here."); });
+    return;
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  note("Exported "+filename+".", true);
+}
+$("exportBtn").addEventListener("click", exportExcel);
 
 /* ---------- boot ---------- */
 (function(){
